@@ -1,3 +1,87 @@
+const { Process } = require("./Process");
+
+/**
+ *
+ * @param {{[name: string] : number}} stocks
+ * @param {string} optimize
+ * @returns
+ */
+const parseOptimize = (stocks, optimize) => {
+  const match = optimize.match(/^optimize:\(([\w;]+)\)$/);
+  if (!match) {
+    throw new Error(`Invalid format for optimize: '${optimize}'`);
+  }
+  const parsedOptimize = optimize.split(":")[1].slice(1, -1).split(";");
+  const filteredOptimize = parsedOptimize.filter(
+    (stock) => stock && stock !== "time"
+  );
+
+  filteredOptimize.forEach((stock) => {
+    if (stock !== "time" && !stocks[stock]) {
+      throw new Error(`Stock '${stock}' to optimize is not defined`);
+    }
+  });
+
+  return filteredOptimize;
+};
+
+/**
+ * @param {string} process
+ */
+const parseProcess = (process) => {
+  const match = process.match(/^(\w+):\((.*)\):\((.*)\):(\d+)$/);
+  if (!match) {
+    throw new Error(`Invalid format for process: '${process}'`);
+  }
+
+  const [_, name, needs, outputs, time] = match;
+  const need = {};
+  needs.split(";").forEach((stock) => {
+    const [stockName, quantity] = parseStock(stock);
+    need[stockName] = quantity;
+  });
+
+  const output = {};
+  outputs.split(";").forEach((stock) => {
+    const [stockName, quantity] = parseStock(stock);
+    output[stockName] = quantity;
+  });
+
+  return new Process(name, need, output, parseInt(time));
+};
+
+/**
+ * @param {string} stock
+ */
+const parseStock = (stock) => {
+  const stockMatch = stock.match(/(\w+):(\d+)/);
+  if (!stockMatch) {
+    throw new Error(`Invalid format for stock: '${stock}'`);
+  }
+
+  return [stockMatch[1], parseInt(stockMatch[2])];
+};
+
+/**
+ *
+ * @param {{[name: string]: number}} stocks
+ * @param {Process} process
+ */
+function updateStocksQuantity(stocks, process) {
+  const processNames = [
+    ...Object.keys(process.need),
+    ...Object.keys(process.output),
+  ];
+
+  const updatedStocks = Object.fromEntries(
+    Object.entries(stocks).map(([name, quantity]) =>
+      !processNames.includes(name) ? [name, 0] : [name, quantity]
+    )
+  );
+
+  return updatedStocks;
+}
+
 /**
  * @param {Buffer} file
  */
@@ -43,12 +127,12 @@ const parseLines = (lines) => {
         }
 
         const parsedProcess = parseProcess(curr);
-
-        // !!! TODO: update_stocks_quantity(stocks, process)
+        const updatedStocks = updateStocksQuantity(stocks, parsedProcess);
 
         return {
           res: {
             ...acc.res,
+            stocks: updatedStocks,
             processes: { ...processes, [parsedProcess.name]: parsedProcess },
           },
           status: "process",
@@ -84,12 +168,4 @@ const parseLines = (lines) => {
   return { ...res, optimize: firstOptimize };
 };
 
-// TODO:
-const parseOptimize = () => {};
-const parseProcess = () => {};
-const parseStock = () => {};
-
-module.exports = {
-  getLines,
-  parseLines,
-};
+module.exports = { getLines, parseLines };
