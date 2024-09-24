@@ -17,7 +17,7 @@ const parseOptimize = (stocks, optimize) => {
   );
 
   filteredOptimize.forEach((stock) => {
-    if (stock !== "time" && !stocks[stock]) {
+    if (stocks[stock] === undefined) {
       throw new Error(`Stock '${stock}' to optimize is not defined`);
     }
   });
@@ -37,14 +37,14 @@ const parseProcess = (process) => {
   const [_, name, needs, outputs, time] = match;
   const need = {};
   needs.split(";").forEach((stock) => {
-    const [stockName, quantity] = parseStock(stock);
-    need[stockName] = quantity;
+    const { name, quantity } = parseStock(stock);
+    need[name] = quantity;
   });
 
   const output = {};
   outputs.split(";").forEach((stock) => {
-    const [stockName, quantity] = parseStock(stock);
-    output[stockName] = quantity;
+    const { name, quantity } = parseStock(stock);
+    output[name] = quantity;
   });
 
   return new Process(name, need, output, parseInt(time));
@@ -59,7 +59,7 @@ const parseStock = (stock) => {
     throw new Error(`Invalid format for stock: '${stock}'`);
   }
 
-  return [stockMatch[1], parseInt(stockMatch[2])];
+  return { name: stockMatch[1], quantity: parseInt(stockMatch[2]) };
 };
 
 /**
@@ -68,16 +68,19 @@ const parseStock = (stock) => {
  * @param {Process} process
  */
 function updateStocksQuantity(stocks, process) {
-  const processNames = [
-    ...Object.keys(process.need),
-    ...Object.keys(process.output),
-  ];
+  const updatedStocks = { ...stocks };
 
-  const updatedStocks = Object.fromEntries(
-    Object.entries(stocks).map(([name, quantity]) =>
-      !processNames.includes(name) ? [name, 0] : [name, quantity]
-    )
-  );
+  for (const name in process.need) {
+    if (!(name in updatedStocks)) {
+      updatedStocks[name] = 0;
+    }
+  }
+
+  for (const name in process.output) {
+    if (!(name in updatedStocks)) {
+      updatedStocks[name] = 0;
+    }
+  }
 
   return updatedStocks;
 }
@@ -108,7 +111,7 @@ const parseLines = (lines) => {
       const { processes, stocks } = acc.res;
 
       if (curr.includes("optimize")) {
-        if (!processes.length) {
+        if (!Object.keys(processes).length) {
           throw new Error("Can't optimize before having any process.");
         }
 

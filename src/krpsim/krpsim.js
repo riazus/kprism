@@ -1,5 +1,5 @@
 const fs = require("fs");
-const { getLines } = require("./parser");
+const { getLines, parseLines } = require("./parser");
 
 function validateParams(params) {
   if (params.length < 2) {
@@ -26,7 +26,8 @@ function main() {
   try {
     const { file, delay } = validateParams(args);
     const parsedLines = getLines(file);
-    console.log(parsedLines);
+    const lol = parseLines(parsedLines);
+    console.log(lol);
   } catch (err) {
     console.error(err);
     process.exit(1);
