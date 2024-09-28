@@ -2,87 +2,14 @@ const { Process } = require("./Process");
 
 /**
  *
- * @param {{[name: string] : number}} stocks
- * @param {string} optimize
- * @returns
- */
-const parseOptimize = (stocks, optimize) => {
-  const match = optimize.match(/^optimize:\(([\w;]+)\)$/);
-  if (!match) {
-    throw new Error(`Invalid format for optimize: '${optimize}'`);
-  }
-  const parsedOptimize = optimize.split(":")[1].slice(1, -1).split(";");
-  const filteredOptimize = parsedOptimize.filter(
-    (stock) => stock && stock !== "time"
-  );
-
-  filteredOptimize.forEach((stock) => {
-    if (stocks[stock] === undefined) {
-      throw new Error(`Stock '${stock}' to optimize is not defined`);
-    }
-  });
-
-  return filteredOptimize;
-};
-
-/**
- * @param {string} process
- */
-const parseProcess = (process) => {
-  const match = process.match(/^(\w+):\((.*)\):\((.*)\):(\d+)$/);
-  if (!match) {
-    throw new Error(`Invalid format for process: '${process}'`);
-  }
-
-  const [_, name, needs, outputs, time] = match;
-  const need = {};
-  needs.split(";").forEach((stock) => {
-    const { name, quantity } = parseStock(stock);
-    need[name] = quantity;
-  });
-
-  const output = {};
-  outputs.split(";").forEach((stock) => {
-    const { name, quantity } = parseStock(stock);
-    output[name] = quantity;
-  });
-
-  return new Process(name, need, output, parseInt(time));
-};
-
-/**
- * @param {string} stock
- */
-const parseStock = (stock) => {
-  const stockMatch = stock.match(/(\w+):(\d+)/);
-  if (!stockMatch) {
-    throw new Error(`Invalid format for stock: '${stock}'`);
-  }
-
-  return { name: stockMatch[1], quantity: parseInt(stockMatch[2]) };
-};
-
-/**
- *
- * @param {{[name: string]: number}} stocks
  * @param {Process} process
+ * @param {{[name: string]: number}} stocks
  */
-function updateStocksQuantity(stocks, process) {
-  const updatedStocks = { ...stocks };
-
-  for (const name in process.need) {
-    if (!(name in updatedStocks)) {
-      updatedStocks[name] = 0;
-    }
-  }
-
-  for (const name in process.output) {
-    if (!(name in updatedStocks)) {
-      updatedStocks[name] = 0;
-    }
-  }
-
-  return updatedStocks;
+function createStocksFromProcess(process, stocks) {
+  const processStockNames = Object.keys({ ...process.need, ...process.output });
+  return Object.fromEntries(
+    processStockNames.filter((name) => !stocks[name]).map((name) => [name, 0])
+  );
 }
 
 /**
@@ -101,74 +28,48 @@ const getLines = (file) => {
   return processedLines;
 };
 
+const isStockLine = (line) => /^\w+:\d+$/.test(line);
+const isProcessLine = (line) =>
+  /^\w+:(\((\w+:\d+;?)+\))?:(\((\w+:\d+;?)+\))?:\d+$/.test(line);
+const isOptimizeLine = (line) => /^optimize:\((\w+;?)+\)$/.test(line);
+
 /**
  * Parses all file lines and returns process, stocks, optimize
  * @param {string[]} lines
  */
 const parseLines = (lines) => {
-  const { res, status } = lines.reduce(
-    (acc, curr) => {
-      const { processes, stocks } = acc.res;
-
-      if (curr.includes("optimize")) {
-        if (!Object.keys(processes).length) {
-          throw new Error("Can't optimize before having any process.");
-        }
-
-        if (acc.status !== "process") {
-          throw new Error("Optimize step is not after 'process'.");
-        }
-
-        const parsedOptimize = parseOptimize(stocks, curr);
+  const { stocks, processes, optimize } = lines.reduce(
+    (acc, line) => {
+      if (isStockLine(line)) {
+        const [stock, val] = line.split(":");
+        return { ...acc, stocks: { ...acc.stocks, [stock]: parseInt(val) } };
+      } else if (isProcessLine(line)) {
+        const process = new Process(line);
+        const newStocks = createStocksFromProcess(process, acc.stocks);
         return {
-          res: { ...acc.res, optimize: parsedOptimize },
-          status: "optimize",
+          ...acc,
+          processes: { ...acc.processes, [process.name]: process },
+          stocks: { ...acc.stocks, ...newStocks },
         };
-      } else if (curr.includes("(")) {
-        if (acc.status === "optimize") {
-          throw new Error(`Expected ${acc.status} for line: ${curr}.`);
-        }
-
-        const parsedProcess = parseProcess(curr);
-        const updatedStocks = updateStocksQuantity(stocks, parsedProcess);
-
-        return {
-          res: {
-            ...acc.res,
-            stocks: updatedStocks,
-            processes: { ...processes, [parsedProcess.name]: parsedProcess },
-          },
-          status: "process",
-        };
+      } else if (isOptimizeLine(line)) {
+        const optimize = line.match(/\w+\)$/)[0].slice(0, -1);
+        return { ...acc, optimize };
       } else {
-        if (acc.status !== "stock") {
-          throw new Error(`Expected ${acc.status} for line: ${curr}.`);
-        }
-
-        const { name, quantity } = parseStock(curr);
-        return {
-          res: { ...acc.res, stocks: { ...stocks, [name]: quantity } },
-          status: "stock",
-        };
+        throw new Error("Unrecognized line format:", line);
       }
     },
     {
-      res: { stocks: {}, processes: {}, optimize: [] },
-      status: "stock",
+      stocks: {},
+      processes: {},
+      optimize: "",
     }
   );
 
-  if (!Object.keys(res.processes).length) {
-    throw new Error("Expected at least one process.");
+  if (stocks[optimize] === undefined) {
+    throw new Error("Stocks don't have optimize parameter:", optimize);
   }
 
-  if (status !== "optimize") {
-    throw new Error("No stock to optimize");
-  }
-
-  const firstOptimize = res.optimize.at(0);
-
-  return { ...res, optimize: firstOptimize };
+  return { stocks, processes, optimize };
 };
 
 module.exports = { getLines, parseLines };

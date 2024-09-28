@@ -1,29 +1,43 @@
 class Process {
   /**
-   * @param {string} name
-   * @param {{[name: string]: number}} need
-   * @param {{[name: string]: number}} output
-   * @param {number} time
+   * @param {string} line
    */
-  constructor(name, need, output, time) {
+  constructor(line) {
+    const match = line.match(/^(\w+):\((.*)\):\((.*)\):(\d+)$/);
+    if (!match) {
+      throw new Error(`Invalid format for process: '${line}'`);
+    }
+
+    const [_, name, needs, outputs, time] = match;
+    const need = Object.fromEntries(needs.split(";").map(parseStock));
+    const output = Object.fromEntries(outputs.split(";").map(parseStock));
+
     this.name = name;
     this.need = need;
     this.output = output;
-    this.time = time;
+    this.time = parseInt(time);
   }
 
   toString() {
-    let s = `\x1b[38;5;70m${this.name}\x1b[0m (time: ${this.time})\n`;
-    s += `\t\x1b[1mInput\x1b[0m: `;
-    for (const [stock, quantity] of Object.entries(this.need)) {
-      s += `\x1b[38;5;62m${stock}\x1b[0m (${quantity}), `;
-    }
-    s += `\n\t\x1b[1mOutput\x1b[0m: `;
-    for (const [stock, quantity] of Object.entries(this.output)) {
-      s += `\x1b[38;5;62m${stock}\x1b[0m (${quantity}), `;
-    }
-    return s;
+    return `name: ${this.name} | need: ${getNameAndValue(
+      this.need
+    )} | output: ${getNameAndValue(this.output)} | time: ${this.time}`;
   }
 }
+
+const getNameAndValue = (keyValue) => {
+  return Object.entries(keyValue)
+    .map(([name, val]) => `[${name}|${val}]`)
+    .join(",");
+};
+
+const parseStock = (stock) => {
+  const stockMatch = stock.match(/(\w+):(\d+)/);
+  if (!stockMatch) {
+    throw new Error(`Invalid format for stock: '${stock}'`);
+  }
+
+  return [stockMatch[1], parseInt(stockMatch[2])];
+};
 
 module.exports = { Process };
