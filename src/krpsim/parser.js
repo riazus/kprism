@@ -35,7 +35,7 @@ const isOptimizeLine = (line) => /^optimize:\((\w+;?)+\)$/.test(line);
 
 /**
  * Parses all file lines and returns process, stocks, optimize
- * @param {string[]} lines
+ * @param {string} lines
  */
 const parseLines = (lines) => {
   const { stocks, processes, optimize } = lines.reduce(
