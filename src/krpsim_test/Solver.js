@@ -205,14 +205,12 @@ class ParallelSGS extends Solver {
    * Main PSGS algorithm.
    */
   run() {
-    let g = 0; // Depth
     let tg = 0; // Time at depth g
     let Ag = []; // Active jobs | { time: number; process: Process }
     let Cg = []; // Completed jobs
     const F = {}; // Finish times for jobs
 
     while (!this.isFinished(Ag, tg)) {
-      g += 1;
       tg = this.minimumFinishedTime(Ag, F); // Get minimum finished time
       this.updateJobs(Cg, Ag, F, tg); // Update active and completed jobs
 
