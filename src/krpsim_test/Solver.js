@@ -90,18 +90,16 @@ class ParallelSGS extends Solver {
   }
 
   /**
-   * Finds the minimum finished time among active jobs.
-   * @param {{time: number, process: Process}[]} Ag - Active jobs list.
-   * @param {{[name: string]: number}} F - Job finish times.
-   * @returns {number} - Minimum finished time.
+   * Finds the minimum finished time among active processes.
+   * @param {ActiveProcess[]} activeProcesses
+   * @param {{[name: string]: number}} finishTimeByName
    */
-  minimumFinishedTime(Ag, F) {
-    let minF = Infinity;
-    Ag.forEach(({ process }) => {
-      if (F[process.name] < minF) {
-        minF = F[process.name];
+  minimumFinishedTime(activeProcesses, finishTimeByName) {
+    const minF = activeProcesses.reduce((acc, { process: { name } }) => {
+      if (finishTimeByName[name] < acc) {
+        return finishTimeByName[name];
       }
-    });
+    }, Infinity);
     return minF === Infinity ? 0 : minF;
   }
 
@@ -159,31 +157,25 @@ class ParallelSGS extends Solver {
 
   /**
    * Heuristic-based job selection.
-   * @param {Process[]} Eg - Eligible jobs list.
-   * @returns {Process|null} - Selected job or null.
+   * @param {Process[]} eligibleProcesses
+   * @returns {Process | undefined}
    */
-  heuristicSelect(Eg) {
-    for (const job of Eg) {
-      for (const key in job.output) {
-        if (this.sim.optimize.includes(key)) {
-          return job;
-        }
-      }
+  heuristicSelect(eligibleProcesses) {
+    const finalProcess = eligibleProcesses.find((p) =>
+      Object.keys(p.output).includes((key) => this.sim.optimize.includes(key))
+    );
+    if (finalProcess) {
+      return finalProcess;
     }
 
-    for (const job of Eg) {
-      for (const key in job.output) {
-        if (
-          key in this.Rbounds &&
-          this.theoreticalStocks[key] >= this.Rbounds[key]
-        ) {
-          continue;
-        }
-        return job;
-      }
-    }
+    const processWithInsufficientStock = eligibleProcesses.find((p) =>
+      Object.keys(p.output).find(
+        (key) =>
+          !this.Rbounds[key] || this.theoreticalStocks[key] < this.Rbounds[key]
+      )
+    );
 
-    return null;
+    return processWithInsufficientStock;
   }
 
   /**
