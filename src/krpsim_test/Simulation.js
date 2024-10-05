@@ -39,33 +39,19 @@ class Simulation {
   }
 
   /**
-   * Adds or updates a stock.
-   * @param {string} name - The name of the stock.
-   * @param {number} quantity - The quantity to add.
-   */
-  stock(name, quantity) {
-    if (this.stocks.hasOwnProperty(name)) {
-      this.stocks[name] += quantity;
-    } else {
-      this.stocks[name] = quantity;
-    }
-    return this;
-  }
-
-  /**
    * Updates the stocks based on new stock quantities.
-   * @param {Object} newStocks - The new stocks to update.
+   * @param {Object} stocks - The stocks to update.
    * @param {boolean} remove - Whether to remove stocks (default: false).
    */
-  updateStocks(newStocks, remove = false) {
-    for (const [key, value] of Object.entries(newStocks)) {
+  updateStocks(stocks, remove = false) {
+    Object.entries(stocks).forEach(([key, value]) => {
       const sign = remove ? -1 : 1;
       if (this.stocks.hasOwnProperty(key)) {
         this.stocks[key] += sign * value;
       } else {
         this.stocks[key] = sign * value;
       }
-    }
+    });
     return this;
   }
 
@@ -77,29 +63,12 @@ class Simulation {
     const output = file
       ? (str) => require("fs").appendFileSync(file, str + "\n")
       : console.log;
+
     output("# Stock:");
-    for (const [key, value] of Object.entries(this.stocks)) {
-      output(`#  ${key} => ${value}`);
-    }
+    Object.entries(this.stocks).forEach(([key, value]) =>
+      output(`#  ${key} => ${value}`)
+    );
   }
-
-  /**
-   * Adds a process to the simulation.
-   * @param {Object} process - The process to add.
-   */
-  addProcess(process) {
-    this.processes.push(process);
-    return this;
-  }
-
-  /**
-   * Adds a stock to optimize.
-   * @param {string} name - The name of the stock to optimize.
-   */
-  // optimize(name) {
-  //   this.optimize.push(name);
-  //   return this;
-  // }
 
   /**
    * Filters processes based on optimization needs.
@@ -140,24 +109,15 @@ class Simulation {
    * Checks if a process can be paid based on current stock.
    * @private
    * @param {Object} process - The process to check.
-   * @param {Object} R - The available resources (stocks).
    */
-  _canPay(process, R) {
-    for (const [key, value] of Object.entries(process.need)) {
-      if (R[key] < value) {
-        return false;
-      }
-    }
-    return true;
+  _canPay(process, stocks) {
+    return Object.entries(process.need).every(
+      ([name, value]) => stocks[name] > value
+    );
   }
 
-  /**
-   * Returns the list of eligible processes that can be executed.
-   * @private
-   * @param {Object} R - The available resources (stocks).
-   */
   _getElligibles(R) {
-    return this.elligibles.filter((process) => this._canPay(process, R));
+    return this.elligibles.filter((p) => this._canPay(p, R));
   }
 
   /**
@@ -196,14 +156,6 @@ class Simulation {
     });
 
     return elligibles;
-  }
-
-  /**
-   * Gets a process by its name.
-   * @param {string} name - The name of the process.
-   */
-  getProcess(name) {
-    return this.processes.find((process) => process.name === name) || null;
   }
 }
 
