@@ -163,7 +163,7 @@ class Simulation {
   /**
    * Gets the list of eligible processes, sorted by heuristic.
    */
-  getElligibles() {
+  getElligibleProcesses() {
     let elligibles = this._getElligibles(this.stocks);
 
     // Sorting heuristic for the processes.

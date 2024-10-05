@@ -106,35 +106,35 @@ class ParallelSGS extends Solver {
   }
 
   /**
-   * Updates the active job list and stocks after job completion.
-   * @param {{time: number, name: string}[]} Cg - Completed jobs list.
-   * @param {{time: number, process: Process}[]} Ag - Active jobs list.
-   * @param {{[name: string]: number}} F - Job finish times.
-   * @param {number} tg - Current time.
-   * @returns {Array} - Updated Cg and Ag lists.
+   * @param {CompleteProcess[]} completeProcesses
+   * @param {ActiveProcess[]} activeProcesses
+   * @param {{[name: string]: number}} finishTimeByName
+   * @param {number} loopTime
    */
-  updateJobs(Cg, Ag, F, tg) {
-    /**
-     * @type {{time: number, process: Process}[]}
-     */
+  updateProcesses(
+    completeProcesses,
+    activeProcesses,
+    finishTimeByName,
+    loopTime
+  ) {
+    /** @type {ActiveProcess[]} */
     const toRemove = [];
 
-    Ag.forEach(({ time, process }) => {
-      if (F[process.name] <= tg) {
+    activeProcesses.forEach(({ time, process }) => {
+      if (finishTimeByName[process.name] <= loopTime) {
         this.sim.updateStocks(process.output); // Update stocks with process results.
-        // Cg.push([time, process.name]);
-        Cg.push({ time, name: process.name });
+        completeProcesses.push({ time, name: process.name });
         toRemove.push({ time, process });
       }
     });
 
     // Remove completed jobs from the active list.
     for (const remove of toRemove) {
-      const idx = Ag.findIndex(
+      const idx = activeProcesses.findIndex(
         (j) => j.time === remove.time && j.process.name === remove.process.name
       );
       if (idx > -1) {
-        Ag.splice(idx, 1);
+        activeProcesses.splice(idx, 1);
       }
     }
 
@@ -143,16 +143,16 @@ class ParallelSGS extends Solver {
   }
 
   /**
-   * Updates the theoretical stocks after executing a job.
-   * @param {Process} job - The job to execute.
+   * Updates the theoretical stocks after executing a process.
+   * @param {Process} process
    */
-  updateStocks(job) {
-    this.sim.updateStocks(job.need, true); // Remove stocks consumed by the job.
+  updateStocks(process) {
+    this.sim.updateStocks(process.need, true); // Remove stocks consumed by the process.
 
-    for (const [key, value] of Object.entries(job.need)) {
+    for (const [key, value] of Object.entries(process.need)) {
       this.theoreticalStocks[key] -= value;
     }
-    for (const [key, value] of Object.entries(job.output)) {
+    for (const [key, value] of Object.entries(process.output)) {
       this.theoreticalStocks[key] += value;
     }
   }
@@ -187,17 +187,15 @@ class ParallelSGS extends Solver {
   }
 
   /**
-   * Checks whether the algorithm should terminate.
-   * @param {{time: number, process: Process}[]} Ag - Active jobs list.
-   * @param {number} tg - Current time.
-   * @returns {boolean} - Whether the algorithm is finished.
+   * @param {ActiveProcess[]} activeProcesses
+   * @param {number} loopTime - Current time.
    */
-  isFinished(Ag, tg) {
+  isFinished(activeProcesses, loopTime) {
     const timeElapsed = Date.now() - this.begin;
     return (
       timeElapsed > this.delay ||
-      tg >= this.cycle ||
-      (tg !== 0 && Ag.length === 0)
+      loopTime >= this.cycle ||
+      (loopTime !== 0 && activeProcesses.length === 0)
     );
   }
 
@@ -205,35 +203,59 @@ class ParallelSGS extends Solver {
    * Main PSGS algorithm.
    */
   run() {
-    let tg = 0; // Time at depth g
-    let Ag = []; // Active jobs | { time: number; process: Process }
-    let Cg = []; // Completed jobs
-    const F = {}; // Finish times for jobs
+    let loopTime = 0; // Time at loop
+    /** @type {ActiveProcess[]} */
+    let activeProcesses = [];
+    /** @type {CompleteProcess[]} */
+    let completeProcesses = [];
+    /** @type {[name: string]: number} */
+    const finishTimeByName = {};
 
-    while (!this.isFinished(Ag, tg)) {
-      tg = this.minimumFinishedTime(Ag, F); // Get minimum finished time
-      this.updateJobs(Cg, Ag, F, tg); // Update active and completed jobs
+    while (!this.isFinished(activeProcesses, loopTime)) {
+      loopTime = this.minimumFinishedTime(activeProcesses, finishTimeByName);
+      this.updateProcesses(
+        completeProcesses,
+        activeProcesses,
+        finishTimeByName,
+        loopTime
+      );
 
-      let Eg = this.sim.getElligibles(); // Get eligible jobs
+      /** @type {Process[]} */
+      let eligibleProcesses = this.sim.getElligibleProcesses();
 
-      while (Eg.length > 0) {
-        const j = this.heuristicSelect(Eg); // Select job based on heuristic
-        if (!j) break;
+      while (eligibleProcesses.length) {
+        const selectedProcess = this.heuristicSelect(eligibleProcesses);
+        if (!selectedProcess) {
+          break;
+        }
 
-        F[j.name] = tg + j.time;
-        Ag.push({ time: tg, process: j }); // Add job to active list
-        this.updateStocks(j); // Update stocks after executing job
-        Eg = this.sim.getElligibles(); // Refresh eligible jobs
+        finishTimeByName[selectedProcess.name] =
+          loopTime + selectedProcess.time;
+        activeProcesses.push({ time: loopTime, process: selectedProcess });
+        this.updateStocks(selectedProcess);
+        eligibleProcesses = this.sim.getElligibleProcesses(); // Refresh eligible processes
       }
     }
 
-    Ag.forEach(({ process }) => {
+    activeProcesses.forEach(({ process }) => {
       this.sim.updateStocks(process.need);
     });
 
-    Cg.sort((a, b) => a.time - b.time); // Sort by cycle
-    this.output(Cg, tg); // Output the final job sequence
+    completeProcesses.sort((a, b) => a.time - b.time); // Sort by cycle
+    this.output(completeProcesses, loopTime); // Output the final job sequence
   }
 }
+
+/**
+ * @typedef {Object} ActiveProcess
+ * @property {number} time
+ * @property {Process} process
+ */
+
+/**
+ * @typedef {Object} CompleteProcess
+ * @property {number} time
+ * @property {string} name
+ */
 
 module.exports = { ParallelSGS };
