@@ -16,6 +16,12 @@ class Process {
     this.need = need;
     this.output = output;
     this.time = parseInt(time);
+    this.score = Object.fromEntries(
+      Object.entries(need).map(([name, qty]) => [
+        name,
+        (output[name] || 0) - qty,
+      ])
+    );
   }
 
   toString() {

@@ -13,11 +13,7 @@ const getResources = (file) => {
   }
 };
 
-function main() {
-  const args = process.argv.slice(2);
-  const { file, delay } = validateParams(args);
-  const { stocks, processes, optimize } = getResources(file);
-
+const lol = (stocks, processes) => {
   let time = 0;
   let executionLog = []; // To store the sequence of actions
 
@@ -52,6 +48,88 @@ function main() {
   for (const [stock, qty] of Object.entries(stocks)) {
     console.log(`${stock} => ${qty}`);
   }
+};
+
+/**
+ *
+ * @param {Array} completedJobs
+ * @param {Array} activeJobs
+ * @param {Object} finishTimeByJobName
+ * @param {number} timeAtDepth
+ */
+const updateJobs = (
+  completedJobs,
+  activeJobs,
+  finishTimeByJobName,
+  timeAtDepth
+) => {
+  const toRemove = [];
+
+  for (const [cycle, job] of activeJobs) {
+    if (finishTimeByJobName[job.name] <= timeAtDepth) {
+      // TODO
+    }
+  }
+
+  for (const remove of toRemove) {
+    const index = activeJobs.indexOf(remove);
+    if (index > -1) {
+      activeJobs.splice(index, 1);
+    }
+  }
+
+  // TODO: update theoretical stocks with the current stocks.
+
+  return [completedJobs, activeJobs];
+};
+
+const minimumFinishedTime = (activeJobs, finishTimeByJobName) => {
+  let minFinishedTime = Infinity;
+
+  activeJobs.forEach((job) => {
+    if (finishTimeByJobName[job.name] < minFinishedTime) {
+      minFinishedTime = finishTimeByJobName[job.name];
+    }
+  });
+
+  return minFinishedTime === Infinity ? 0 : minFinishedTime;
+};
+
+const isFinished = (beginTime, delay, activeJobs, timeAtDepth) => {
+  if (new Date().getTime() - beginTime > delay) {
+    return true;
+  } else if (timeAtDepth && !activeJobs.length) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+const sgs = (delay) => {
+  const beginTime = new Date().getTime();
+  let depth = 0;
+  let timeAtDepth = 0;
+  let activeJobs = []; // [[cycle, job]]
+  let completedJobs = [];
+  let finishTimeByJobName = {};
+
+  while (isFinished(beginTime, delay, activeJobs, timeAtDepth)) {
+    depth += 1;
+    timeAtDepth = minimumFinishedTime(activeJobs, finishTimeByJobName);
+
+    [completedJobs, activeJobs] = updateJobs(
+      completedJobs,
+      activeJobs,
+      finishTimeByJobName,
+      timeAtDepth
+    );
+  }
+};
+
+function main() {
+  const args = process.argv.slice(2);
+  const { file, delay } = validateParams(args);
+  const { stocks, processes, optimize } = getResources(file);
 }
 
 main();
