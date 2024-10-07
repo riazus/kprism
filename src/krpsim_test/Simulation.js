@@ -75,7 +75,6 @@ class Simulation {
    * @private
    */
   _filterProcess(optimizing, seen, depth) {
-    // TODO : refactor
     for (const p of this.processes) {
       for (const r of Object.keys(p.output)) {
         if (optimizing.includes(r)) {
