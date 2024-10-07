@@ -1,12 +1,24 @@
 const fs = require("fs");
+const { parseLines, getLines } = require("./parser");
+
+const getResources = (file) => {
+  try {
+    const parsedLines = getLines(file);
+    const resources = parseLines(parsedLines);
+    printParseResult(resources);
+    return resources;
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+};
 
 const validateParams = (params) => {
-  if (params.length < 2) {
+  if (params.length !== 2) {
     throw new Error("Two parameters are required.");
   }
 
   const [param1, param2] = params;
-
   if (!param1 || !param2) {
     throw new Error("Both parameters must be non-empty.");
   }
@@ -27,4 +39,4 @@ const printParseResult = ({ stocks, processes, optimize }) => {
   );
 };
 
-module.exports = { validateParams, printParseResult };
+module.exports = { validateParams, printParseResult, getResources };

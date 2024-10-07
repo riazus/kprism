@@ -1,19 +1,6 @@
-const { parseLines, getLines } = require("./parser");
-const { validateParams, printParseResult } = require("./utils");
+const { validateParams, getResources } = require("./utils");
 const { Simulation } = require("./Simulation");
 const { ParallelSGS } = require("./Solver");
-
-const getResources = (file) => {
-  try {
-    const parsedLines = getLines(file);
-    const resources = parseLines(parsedLines);
-    printParseResult(resources);
-    return resources;
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
-  }
-};
 
 function main() {
   const args = process.argv.slice(2);
@@ -22,7 +9,8 @@ function main() {
   const simulation = new Simulation(stocks, Object.values(processes), [
     optimize,
   ]);
-  const solver = new ParallelSGS(simulation, { delay });
+  const logFile = args[0] + ".log";
+  const solver = new ParallelSGS(simulation, { delay, file: logFile });
   solver.run();
 }
 

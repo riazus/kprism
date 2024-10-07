@@ -11,10 +11,10 @@ class Solver {
     this.sim = sim;
     this.sim.filterProcesses(); // Filter eligible processes.
 
-    this.begin = Date.now(); // Start time of the simulation.
     this.delay = delay; // Max running time for the simulation.
+    this.file = file;
+    this.begin = Date.now(); // Start time of the simulation.
     this.cycle = cycle ?? Infinity; // Max number of cycles.
-    // this.file = file ?? "test_" + Date.now() + ".log"; // Output file path.
     this.verbose = verbose ?? true; // Enable or disable verbose output.
 
     this.Rbounds = this.calculateRbounds();
