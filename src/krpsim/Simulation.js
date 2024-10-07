@@ -1,8 +1,7 @@
-const { Process } = require("../krpsim/Process");
+const { Process } = require("./Process");
 
 class Simulation {
   /**
-   *
    * @param {{[name: string]: number}} stocks
    * @param {Process[]} processes
    * @param {string[]} optimize
@@ -15,9 +14,7 @@ class Simulation {
     this.priority = {};
   }
 
-  /**
-   * Returns a string representation of the simulation.
-   */
+  /** Returns a string representation of the simulation. */
   toString() {
     let rep = "# Simulation description:\n";
     rep += `# ${this.processes.length} processes, `;
@@ -75,34 +72,31 @@ class Simulation {
    * @private
    */
   _filterProcess(optimizing, seen, depth) {
-    // TODO : refactor
-    for (const p of this.processes) {
-      for (const r of Object.keys(p.output)) {
+    this.processes.forEach((p) => {
+      Object.keys(p.output).forEach((r) => {
         if (optimizing.includes(r)) {
-          for (const n of Object.keys(p.need)) {
+          Object.keys(p.need).forEach((n) => {
             if (!this.priority.hasOwnProperty(n)) {
               this.priority[n] = depth;
             }
             this.priority[n] = Math.min(this.priority[n], depth);
-          }
+          });
+
           if (!seen.includes(p)) {
             seen.push(p);
             seen = this._filterProcess(Object.keys(p.need), seen, depth + 1);
           }
         }
-      }
-    }
+      });
+    });
+
     return seen;
   }
 
-  /**
-   * Filters eligible processes for the simulation.
-   */
+  /** Filters eligible processes for the simulation. */
   filterProcesses() {
     this.elligibles = this._filterProcess(this.optimize, [], 0);
-    for (const o of this.optimize) {
-      this.priority[o] = -2;
-    }
+    this.optimize.forEach((o) => (this.priority[o] = -2));
     return this;
   }
 
@@ -110,39 +104,36 @@ class Simulation {
    * Checks if a process can be paid based on current stock.
    * @private
    * @param {Object} process - The process to check.
+   * @param {Object} R - The available resources (stocks).
    */
-  _canPay(process, stocks) {
+  _canPay(process, R) {
     return Object.entries(process.need).every(
-      ([name, value]) => stocks[name] > value
+      ([key, value]) => R[key] >= value
     );
   }
 
+  /**
+   * Returns the list of eligible processes that can be executed.
+   * @private
+   * @param {Object} R - The available resources (stocks).
+   */
   _getElligibles(R) {
-    return this.elligibles.filter((p) => this._canPay(p, R));
+    return this.elligibles.filter((process) => this._canPay(process, R));
   }
 
-  /**
-   * Gets the list of eligible processes, sorted by heuristic.
-   */
+  /** Gets the list of eligible processes, sorted by heuristic. */
   getElligibleProcesses() {
     let elligibles = this._getElligibles(this.stocks);
 
     // Sorting heuristic for the processes.
     const keyFunc = (x) => {
-      let sortKeys = [];
-      for (const optimize of this.optimize) {
-        const oScore =
-          x.score[optimize] !== undefined ? x.score[optimize] : -Infinity;
-        let score = 0;
-        for (const key in x.score) {
-          if (key !== optimize) {
-            score += x.score[key];
-          }
-        }
-        sortKeys.push(oScore);
-        sortKeys.push(score);
-      }
-      return sortKeys;
+      return this.optimize.reduce((acc, curr) => {
+        const oScore = x.score[curr] !== undefined ? x.score[curr] : -Infinity;
+        const score = Object.keys(x.score).reduce((acc, key) =>
+          key !== curr ? acc + x.score[key] : acc
+        );
+        return [...acc, oScore, score];
+      }, []);
     };
 
     elligibles.sort((a, b) => {
