@@ -99,7 +99,6 @@ class ParallelSGS extends Solver {
       if (finishTimeByName[name] < acc) {
         return finishTimeByName[name];
       }
-      return acc;
     }, Infinity);
     return minF === Infinity ? 0 : minF;
   }
@@ -215,6 +214,7 @@ class ParallelSGS extends Solver {
 
       /** @type {Process[]} */
       let eligibleProcesses = this.sim.getElligibleProcesses();
+
       while (eligibleProcesses.length) {
         const selectedProcess = this.heuristicSelect(eligibleProcesses);
         if (!selectedProcess) {
