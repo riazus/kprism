@@ -143,12 +143,9 @@ class Simulation {
    * @param {Object} R - The available resources (stocks).
    */
   _canPay(process, R) {
-    for (const [key, value] of Object.entries(process.need)) {
-      if (R[key] < value) {
-        return false;
-      }
-    }
-    return true;
+    return Object.entries(process.need).every(
+      ([key, value]) => R[key] >= value
+    );
   }
 
   /**
