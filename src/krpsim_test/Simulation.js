@@ -39,33 +39,19 @@ class Simulation {
   }
 
   /**
-   * Adds or updates a stock.
-   * @param {string} name - The name of the stock.
-   * @param {number} quantity - The quantity to add.
-   */
-  stock(name, quantity) {
-    if (this.stocks.hasOwnProperty(name)) {
-      this.stocks[name] += quantity;
-    } else {
-      this.stocks[name] = quantity;
-    }
-    return this;
-  }
-
-  /**
    * Updates the stocks based on new stock quantities.
-   * @param {Object} newStocks - The new stocks to update.
+   * @param {Object} stocks - The stocks to update.
    * @param {boolean} remove - Whether to remove stocks (default: false).
    */
-  updateStocks(newStocks, remove = false) {
-    for (const [key, value] of Object.entries(newStocks)) {
+  updateStocks(stocks, remove = false) {
+    Object.entries(stocks).forEach(([key, value]) => {
       const sign = remove ? -1 : 1;
       if (this.stocks.hasOwnProperty(key)) {
         this.stocks[key] += sign * value;
       } else {
         this.stocks[key] = sign * value;
       }
-    }
+    });
     return this;
   }
 
