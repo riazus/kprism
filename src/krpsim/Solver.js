@@ -1,4 +1,4 @@
-const { Process } = require("../krpsim/Process");
+const { Process } = require("./Process");
 const { Simulation } = require("./Simulation");
 
 class Solver {
