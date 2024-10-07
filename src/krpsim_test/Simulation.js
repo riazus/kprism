@@ -2,7 +2,6 @@ const { Process } = require("../krpsim/Process");
 
 class Simulation {
   /**
-   *
    * @param {{[name: string]: number}} stocks
    * @param {Process[]} processes
    * @param {string[]} optimize
@@ -15,9 +14,7 @@ class Simulation {
     this.priority = {};
   }
 
-  /**
-   * Returns a string representation of the simulation.
-   */
+  /** Returns a string representation of the simulation. */
   toString() {
     let rep = "# Simulation description:\n";
     rep += `# ${this.processes.length} processes, `;
@@ -96,9 +93,7 @@ class Simulation {
     return seen;
   }
 
-  /**
-   * Filters eligible processes for the simulation.
-   */
+  /** Filters eligible processes for the simulation. */
   filterProcesses() {
     this.elligibles = this._filterProcess(this.optimize, [], 0);
     this.optimize.forEach((o) => (this.priority[o] = -2));
@@ -126,28 +121,19 @@ class Simulation {
     return this.elligibles.filter((process) => this._canPay(process, R));
   }
 
-  /**
-   * Gets the list of eligible processes, sorted by heuristic.
-   */
+  /** Gets the list of eligible processes, sorted by heuristic. */
   getElligibleProcesses() {
     let elligibles = this._getElligibles(this.stocks);
 
     // Sorting heuristic for the processes.
     const keyFunc = (x) => {
-      let sortKeys = [];
-      for (const optimize of this.optimize) {
-        const oScore =
-          x.score[optimize] !== undefined ? x.score[optimize] : -Infinity;
-        let score = 0;
-        for (const key in x.score) {
-          if (key !== optimize) {
-            score += x.score[key];
-          }
-        }
-        sortKeys.push(oScore);
-        sortKeys.push(score);
-      }
-      return sortKeys;
+      return this.optimize.reduce((acc, curr) => {
+        const oScore = x.score[curr] !== undefined ? x.score[curr] : -Infinity;
+        const score = Object.keys(x.score).reduce((acc, key) =>
+          key !== curr ? acc + x.score[key] : acc
+        );
+        return [...acc, oScore, score];
+      }, []);
     };
 
     elligibles.sort((a, b) => {
