@@ -75,22 +75,24 @@ class Simulation {
    * @private
    */
   _filterProcess(optimizing, seen, depth) {
-    for (const p of this.processes) {
-      for (const r of Object.keys(p.output)) {
+    this.processes.forEach((p) => {
+      Object.keys(p.output).forEach((r) => {
         if (optimizing.includes(r)) {
-          for (const n of Object.keys(p.need)) {
+          Object.keys(p.need).forEach((n) => {
             if (!this.priority.hasOwnProperty(n)) {
               this.priority[n] = depth;
             }
             this.priority[n] = Math.min(this.priority[n], depth);
-          }
+          });
+
           if (!seen.includes(p)) {
             seen.push(p);
             seen = this._filterProcess(Object.keys(p.need), seen, depth + 1);
           }
         }
-      }
-    }
+      });
+    });
+
     return seen;
   }
 
@@ -99,9 +101,7 @@ class Simulation {
    */
   filterProcesses() {
     this.elligibles = this._filterProcess(this.optimize, [], 0);
-    for (const o of this.optimize) {
-      this.priority[o] = -2;
-    }
+    this.optimize.forEach((o) => (this.priority[o] = -2));
     return this;
   }
 
