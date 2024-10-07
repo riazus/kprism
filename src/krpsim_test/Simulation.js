@@ -63,29 +63,12 @@ class Simulation {
     const output = file
       ? (str) => require("fs").appendFileSync(file, str + "\n")
       : console.log;
+
     output("# Stock:");
-    for (const [key, value] of Object.entries(this.stocks)) {
-      output(`#  ${key} => ${value}`);
-    }
+    Object.entries(this.stocks).forEach(([key, value]) =>
+      output(`#  ${key} => ${value}`)
+    );
   }
-
-  /**
-   * Adds a process to the simulation.
-   * @param {Object} process - The process to add.
-   */
-  addProcess(process) {
-    this.processes.push(process);
-    return this;
-  }
-
-  /**
-   * Adds a stock to optimize.
-   * @param {string} name - The name of the stock to optimize.
-   */
-  // optimize(name) {
-  //   this.optimize.push(name);
-  //   return this;
-  // }
 
   /**
    * Filters processes based on optimization needs.
@@ -179,14 +162,6 @@ class Simulation {
     });
 
     return elligibles;
-  }
-
-  /**
-   * Gets a process by its name.
-   * @param {string} name - The name of the process.
-   */
-  getProcess(name) {
-    return this.processes.find((process) => process.name === name) || null;
   }
 }
 
