@@ -42,129 +42,110 @@ const printParseResult = ({ stocks, processes, optimize }) => {
 
 /**
  * Updates the resource allocation.
- * @param {Object} R - Resource map.
- * @param {number} t - Time point.
- * @param {Object} r - Resource changes (needs or outputs).
+ * @param {Object} stocksByTime - Resource map.
+ * @param {number} currentTime - Time point.
+ * @param {Object} stockUpdates - Resource changes (needs or outputs).
  * @param {boolean} [remove=false] - Whether to remove the resources.
  * @returns {Object} - Updated resource map.
  */
-function updateR(R, t, r, remove = false) {
+function updateStocksByTime(
+  stocksByTime,
+  currentTime,
+  stockUpdates,
+  remove = false
+) {
   const sign = remove ? -1 : 1;
 
-  if (!R[t]) {
-    R[t] = {};
+  if (!stocksByTime[currentTime]) {
+    stocksByTime[currentTime] = {};
   }
 
-  for (const [key, amount] of Object.entries(r)) {
-    if (!R[t][key]) {
-      R[t][key] = sign * amount;
+  for (const [stock, amount] of Object.entries(stockUpdates)) {
+    if (!stocksByTime[currentTime][stock]) {
+      stocksByTime[currentTime][stock] = sign * amount;
     } else {
-      R[t][key] += sign * amount;
+      stocksByTime[currentTime][stock] += sign * amount;
     }
   }
 
-  return R;
+  return stocksByTime;
 }
 
 /**
  * Checks if resources are available.
- * @param {Object} R - Resource map.
- * @param {number} t - Time point.
- * @param {Object} r - Required resources.
+ * @param {Object} stocksByTime - Resource map.
+ * @param {number} currentTime - Time point.
+ * @param {Object} requiredResources - Required resources.
  * @returns {boolean} - Whether all required resources are available.
  */
-function availableR(R, t, r) {
-  for (const [key, amount] of Object.entries(r)) {
-    if (!R[t] || R[t][key] < amount) {
-      return false;
-    }
+function hasEnoughResources(stocksByTime, currentTime, requiredResources) {
+  if (!stocksByTime[currentTime]) {
+    return false;
   }
-  return true;
+
+  return Object.entries(requiredResources).every(
+    ([stock, amount]) => stocksByTime[currentTime][stock] >= amount
+  );
 }
 
 /**
  * Performs a check on the execution trace and resource allocation.
- * @param {Object} R0 - Initial resources.
- * @param {(string | Process)[][]} S - Execution trace (time, job pairs).
+ * @param {Object.<string, number>} initialStocks - Initial resources.
+ * @param {(string | Process)[][]} timeProcessMap - Execution trace (time, job pairs).
  * @returns {number} - The index of the failed job or -1 if all succeed.
  */
-function check(R0, S) {
-  let R = { [0]: { ...R0 } };
-  let prevT = new Set([0]);
+function check(initialStocks, timeProcessMap) {
+  /** @type {Object.<number, Object.<string, number>>} */
+  let stocksByTime = { [0]: { ...initialStocks } };
+  let prevTimes = new Set([0]);
   let idx = 0;
 
   try {
-    S.forEach(([t, process]) => {
-      console.log(`Evaluating: ${t}:${process.name}`);
+    timeProcessMap.forEach(([currentTime, process]) => {
+      console.log(`Evaluating: ${currentTime}:${process.name}`);
 
       const toRemove = [];
-      for (const T of prevT) {
-        if (T < t) {
-          toRemove.push(T);
-          for (const [key, amount] of Object.entries(R[T])) {
-            if (!R[t]) {
-              R[t] = {};
+      for (const time of prevTimes) {
+        if (time < currentTime) {
+          toRemove.push(time);
+          for (const [stock, amount] of Object.entries(stocksByTime[time])) {
+            if (!stocksByTime[currentTime]) {
+              stocksByTime[currentTime] = {};
             }
-            R[t][key] = (R[t][key] || 0) + amount;
+            stocksByTime[currentTime][stock] =
+              (stocksByTime[currentTime][stock] || 0) + amount;
           }
         }
       }
 
-      for (const T of toRemove) {
-        prevT.delete(T);
-        delete R[T];
+      for (const time of toRemove) {
+        prevTimes.delete(time);
+        delete stocksByTime[time];
       }
 
-      if (!availableR(R, t, process.need)) {
+      if (!hasEnoughResources(stocksByTime, currentTime, process.need)) {
         return idx;
       }
 
-      R = updateR(R, t, process.need, true); // Remove process needs
-      R = updateR(R, t + process.time, process.output); // Add process results
-      prevT.add(t + process.time);
+      stocksByTime = updateStocksByTime(
+        stocksByTime,
+        currentTime,
+        process.need,
+        true
+      ); // Remove process needs
+      stocksByTime = updateStocksByTime(
+        stocksByTime,
+        currentTime + process.time,
+        process.output
+      ); // Add process results
+      prevTimes.add(currentTime + process.time);
       idx++;
     });
-
-    /*
-    for (const [t, job] of S) {
-      if (verbose) {
-        console.log(`Evaluating: ${t}:${job.name}`);
-      }
-
-      const toRemove = [];
-      for (const T of prevT) {
-        if (T < t) {
-          toRemove.push(T);
-          for (const [key, amount] of Object.entries(R[T])) {
-            if (!R[t]) {
-              R[t] = {};
-            }
-            R[t][key] = (R[t][key] || 0) + amount;
-          }
-        }
-      }
-
-      for (const T of toRemove) {
-        prevT.delete(T);
-        delete R[T];
-      }
-
-      if (!availableR(R, t, job.needs)) {
-        return idx;
-      }
-
-      R = updateR(R, t, job.needs, true); // Remove job needs
-      R = updateR(R, t + job.delay, job.results); // Add job results
-      prevT.add(t + job.delay);
-      idx++;
-    }
-    */
+    return -1;
   } catch (error) {
     console.error("Error occurred during execution trace evaluation:", error);
     return idx;
   }
-
-  return -1;
 }
 
 module.exports = { validateParams, printParseResult, getResources, check };

@@ -87,7 +87,7 @@ function parseTrace(filePath) {
       .filter((line) => line) // Remove empty lines
       .map((line) => line.split(":")); // Split by ':'
 
-    return raw.map(([cycle, name]) => [parseInt(cycle, 10), name.trim()]);
+    return raw.map(([time, name]) => [parseInt(time, 10), name.trim()]);
   } catch (error) {
     console.error("Error encountered while parsing.");
     console.error(`=====\n${error}\n=====\nExiting...`);

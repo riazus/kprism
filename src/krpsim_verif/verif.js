@@ -10,21 +10,23 @@ const { parseTrace } = require("../krpsim/parser");
  * @returns {boolean} - Whether the execution was valid.
  */
 function verif(sim, trace) {
-  const S = trace.map(([cycle, name]) => [cycle, sim.getProcessByName(name)]);
+  const timeProcessMap = trace.map(([time, name]) => [
+    time,
+    sim.getProcessByName(name),
+  ]);
 
   // Check for any issues in the stock
-  const idx = check(sim.stocks, S);
-
-  if (idx !== -1) {
-    const [t, name] = trace[idx];
-    const j = sim.getProcessByName(name);
-    console.log("====== Error detected");
-    console.log(`at ${t}:${j.name} stock insufficient`);
-    console.log("======= Exiting...");
-    return false;
+  const idx = check(sim.stocks, timeProcessMap);
+  if (idx === -1) {
+    return true;
   }
 
-  return true;
+  const [time, name] = trace[idx];
+  const j = sim.getProcessByName(name);
+  console.log("====== Error detected");
+  console.log(`at ${time}:${j.name} stock insufficient`);
+  console.log("======= Exiting...");
+  return false;
 }
 
 function main() {
