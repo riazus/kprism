@@ -54,7 +54,7 @@ class Simulation {
 
   /**
    * Prints the current stocks to the console or a file.
-   * @param {Object} [file] - Optional file to print the stocks to.
+   * @param {string} [file] - Optional file to print the stocks to.
    */
   printStocks(file = null) {
     const output = file
@@ -148,6 +148,11 @@ class Simulation {
     });
 
     return elligibles;
+  }
+
+  /** @param {string} name */
+  getProcessByName(name) {
+    return this.processes.find((p) => p.name === name);
   }
 }
 

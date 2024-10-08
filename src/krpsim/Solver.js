@@ -66,7 +66,7 @@ class Solver {
     this.manageOutput("# Main walk");
     Cg.forEach(({ time, name }) => this.manageOutput(`${time}: ${name}`));
     this.manageOutput(`# No more process doable at cycle ${tg + 1}`);
-    // this.sim.printStocks({ file: this.file });
+    this.sim.printStocks(this.file);
 
     if (this.verbose) {
       this.sim.printStocks();

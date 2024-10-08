@@ -1,3 +1,4 @@
+const fs = require("fs");
 const { Process } = require("./Process");
 
 /**
@@ -72,4 +73,26 @@ const parseLines = (lines) => {
   return { stocks, processes, optimize };
 };
 
-module.exports = { getLines, parseLines };
+/**
+ * Parses the trace file.
+ * @param {string} filePath - Path to the trace file.
+ * @returns {string[][]|null} - Parsed trace or null in case of an error.
+ */
+function parseTrace(filePath) {
+  try {
+    const raw = fs
+      .readFileSync(filePath, "utf8")
+      .split("\n") // Split file into lines
+      .map((line) => line.replace(/#.*$/, "").trim()) // Remove comments and trim spaces
+      .filter((line) => line) // Remove empty lines
+      .map((line) => line.split(":")); // Split by ':'
+
+    return raw.map(([cycle, name]) => [parseInt(cycle, 10), name.trim()]);
+  } catch (error) {
+    console.error("Error encountered while parsing.");
+    console.error(`=====\n${error}\n=====\nExiting...`);
+    return null;
+  }
+}
+
+module.exports = { getLines, parseLines, parseTrace };
