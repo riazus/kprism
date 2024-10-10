@@ -55,14 +55,14 @@ const parseLines = (lines) => {
         const optimize = occurrence.split(";");
         return { ...acc, optimize };
       } else {
-        throw new Error("Unrecognized line format:", line);
+        throw new Error(`Unrecognized line format: ${line}`);
       }
     },
     { stocks: {}, processes: [], optimize: [] }
   );
 
   if (stocks[optimize.at(-1)] === undefined) {
-    throw new Error("Stocks don't have optimize parameter:", optimize);
+    throw new Error(`Stocks don't have optimize parameter:${optimize}`);
   }
 
   return { stocks, processes, optimize };
