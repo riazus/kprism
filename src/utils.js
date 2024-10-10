@@ -5,39 +5,39 @@ const { Process } = require("./Process");
 const getResources = (file) => {
   try {
     const parsedLines = getLines(file);
-    const resources = parseLines(parsedLines);
-    printParseResult(resources);
-    return resources;
+    const { processes, stocks, optimize } = parseLines(parsedLines);
+    console.log(
+      `Nice file! ${Object.keys(processes).length} processes, ${
+        Object.keys(stocks).length
+      } stocks, ${optimize.length} to optimize\n`
+    );
+    return { processes, stocks, optimize };
   } catch (err) {
-    console.error(err);
+    console.log(err.message);
     process.exit(1);
   }
 };
 
 const validateParams = (params) => {
-  if (params.length !== 2) {
-    throw new Error("Two parameters are required.");
+  try {
+    if (params.length !== 2) {
+      throw new Error("Two parameters are required.");
+    }
+
+    const [param1, param2] = params;
+    if (!param1 || !param2) {
+      throw new Error("Both parameters must be non-empty.");
+    }
+    if (!fs.existsSync(param1)) {
+      throw new Error(`File at path ${param1} does not exist.`);
+    }
+
+    const file = fs.readFileSync(param1);
+    return { file, delay: param2 };
+  } catch (err) {
+    console.log(err.message);
+    process.exit(1);
   }
-
-  const [param1, param2] = params;
-  if (!param1 || !param2) {
-    throw new Error("Both parameters must be non-empty.");
-  }
-
-  if (!fs.existsSync(param1)) {
-    throw new Error(`File at path ${param1} does not exist.`);
-  }
-
-  const file = fs.readFileSync(param1);
-  return { file, delay: param2 };
-};
-
-const printParseResult = ({ stocks, processes, optimize }) => {
-  console.log(
-    `Nice file! ${Object.keys(processes).length} processes, ${
-      Object.keys(stocks).length
-    } stocks, ${[optimize].length} to optimize\n`
-  );
 };
 
 /**
@@ -148,4 +148,4 @@ function check(initialStocks, timeProcessMap) {
   }
 }
 
-module.exports = { validateParams, printParseResult, getResources, check };
+module.exports = { validateParams, getResources, check };

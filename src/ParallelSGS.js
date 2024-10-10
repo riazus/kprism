@@ -1,98 +1,32 @@
 const { Process } = require("./Process");
 const { Simulation } = require("./Simulation");
 
-class Solver {
+// Parallel Schedule Generation Scheme (PSGS) implementation.
+class ParallelSGS {
   /**
-   * Initializes the solver.
    * @param {Simulation} sim - Current simulation to evaluate.
    * @param {Object} kwargs - Additional configuration parameters.
    */
-  constructor(sim, { delay, cycle, verbose, file }) {
+  constructor(sim, { delay, file, cycle, verbose }) {
     this.sim = sim;
     this.sim.filterProcesses(); // Filter eligible processes.
 
     this.delay = delay; // Max running time for the simulation.
     this.file = file;
     this.begin = Date.now(); // Start time of the simulation.
+    // TODO
     this.cycle = cycle ?? Infinity; // Max number of cycles.
+    // TODO
     this.verbose = verbose ?? true; // Enable or disable verbose output.
 
     this.Rbounds = this.calculateRbounds();
-  }
-
-  /**
-   * Calculates the resource bounds (Rbounds) for eligible processes.
-   * @returns {Object} - Rbounds object.
-   */
-  calculateRbounds() {
-    const Rbounds = {};
-
-    // Find the maximum resource needs for eligible processes.
-    for (const process of this.sim.elligibles) {
-      for (const [need, amount] of Object.entries(process.need)) {
-        Rbounds[need] = Math.max(Rbounds[need] || 0, amount);
-      }
-    }
-
-    // Remove optimizing resources from Rbounds.
-    for (const opt of this.sim.optimize) {
-      delete Rbounds[opt];
-    }
-
-    return Rbounds;
-  }
-
-  /**
-   * Prints or writes output to file and console.
-   * @param {string} message - The output message.
-   */
-  manageOutput(message) {
-    if (this.verbose) {
-      console.log(message);
-    }
-
-    // Optionally write to file.
-    if (this.file) {
-      require("fs").appendFileSync(this.file, message + "\n");
-    }
-  }
-
-  /**
-   * Outputs the result path and simulation stocks.
-   * @param {{time: string; name: string}[]} Cg - The sequence of cycles and processes.
-   * @param {number} tg - The time at which no more processes can be executed.
-   */
-  output(Cg, tg) {
-    this.manageOutput("# Main walk");
-    Cg.forEach(({ time, name }) => this.manageOutput(`${time}: ${name}`));
-    this.manageOutput(`# No more process doable at cycle ${tg + 1}`);
-    this.sim.printStocks(this.file);
-
-    if (this.verbose) {
-      this.sim.printStocks();
-    }
-  }
-
-  // Placeholder for run method (implemented in ParallelSGS).
-  run() {}
-}
-
-// Parallel Schedule Generation Scheme (PSGS) implementation.
-class ParallelSGS extends Solver {
-  /**
-   * Initializes the PSGS.
-   * @param {Simulation} sim - Current simulation to evaluate.
-   * @param {Object} kwargs - Additional configuration parameters.
-   */
-  constructor(sim, kwargs) {
-    super(sim, kwargs);
     this.theoreticalStocks = { ...this.sim.stocks }; // Copy of the initial stocks.
   }
 
   /**
    * Finds the minimum finished time among active processes.
    * @param {ActiveProcess[]} activeProcesses
-   * @param {{[name: string]: number}} finishTimeByName
+   * @param {Object.<string,number>} finishTimeByName
    */
   minimumFinishedTime(activeProcesses, finishTimeByName) {
     const minF = activeProcesses.reduce((acc, { process: { name } }) => {
@@ -107,7 +41,7 @@ class ParallelSGS extends Solver {
   /**
    * @param {CompleteProcess[]} completeProcesses
    * @param {ActiveProcess[]} activeProcesses
-   * @param {{[name: string]: number}} finishTimeByName
+   * @param {Object.<string,number>} finishTimeByName
    * @param {number} loopTime
    */
   updateProcesses(
@@ -201,7 +135,7 @@ class ParallelSGS extends Solver {
     let activeProcesses = [];
     /** @type {CompleteProcess[]} */
     let completeProcesses = [];
-    /** @type {[name: string]: number} */
+    /** @type {Object.<string,number>} */
     const finishTimeByName = {};
 
     while (!this.isFinished(activeProcesses, loopTime)) {
@@ -235,6 +169,53 @@ class ParallelSGS extends Solver {
 
     completeProcesses.sort((a, b) => a.time - b.time); // Sort by cycle
     this.output(completeProcesses, loopTime); // Output the final job sequence
+  }
+
+  /**
+   * Outputs the result path and simulation stocks.
+   * @param {CompleteProcess[]} completeProcesses - The sequence of cycles and processes.
+   * @param {number} loopTime - The time at which no more processes can be executed.
+   */
+  output(completeProcesses, loopTime) {
+    this.manageOutput("# Main walk");
+    completeProcesses.forEach(({ time, name }) =>
+      this.manageOutput(`${time}: ${name}`)
+    );
+    this.manageOutput(`# No more process doable at cycle ${loopTime + 1}`);
+    this.sim.printStocks(this.file);
+
+    if (this.verbose) {
+      this.sim.printStocks();
+    }
+  }
+
+  /**
+   * Prints or writes output to file and console.
+   * @param {string} message - The output message.
+   */
+  manageOutput(message) {
+    if (this.verbose) {
+      console.log(message);
+    }
+
+    // Optionally write to file.
+    if (this.file) {
+      require("fs").appendFileSync(this.file, message + "\n");
+    }
+  }
+
+  /** Calculates the resource bounds (Rbounds) for eligible processes. */
+  calculateRbounds() {
+    return this.sim.elligibles
+      .flatMap((p) => Object.entries(p.need))
+      .reduce((acc, curr) => {
+        const [need, amount] = curr;
+        if (this.sim.optimize.includes(need)) {
+          return acc;
+        }
+
+        return { ...acc, [need]: Math.max(acc[need] || 0, amount) };
+      }, {});
   }
 }
 

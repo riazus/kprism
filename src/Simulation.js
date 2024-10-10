@@ -2,7 +2,7 @@ const { Process } = require("./Process");
 
 class Simulation {
   /**
-   * @param {{[name: string]: number}} stocks
+   * @param {Object.<string,number>} stocks
    * @param {Process[]} processes
    * @param {string[]} optimize
    */
@@ -10,7 +10,9 @@ class Simulation {
     this.stocks = stocks;
     this.processes = processes;
     this.optimize = optimize;
+    /** @type {Process[]} */
     this.elligibles = [];
+    /** @type {Object.<string,number>} */
     this.priority = {};
   }
 
