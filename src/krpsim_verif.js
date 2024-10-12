@@ -24,7 +24,7 @@ function verif(sim, trace) {
   const [time, name] = trace[idx];
   const j = sim.getProcessByName(name);
   console.log("====== Error detected");
-  console.log(`at ${time}:${j.name} stock insufficient`);
+  console.log(`at ${time}: ${j.name} stock insufficient`);
   return false;
 }
 

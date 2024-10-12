@@ -115,7 +115,7 @@ function check(initialStocks, timeProcessMap) {
   let idx = 0;
 
   try {
-    timeProcessMap.forEach(([currentTime, process]) => {
+    for (const [currentTime, process] of timeProcessMap) {
       console.log(`Evaluating: ${currentTime}:${process.name}`);
 
       const toRemove = [];
@@ -154,7 +154,7 @@ function check(initialStocks, timeProcessMap) {
       ); // Add process results
       prevTimes.add(currentTime + process.time);
       idx++;
-    });
+    }
     return -1;
   } catch (error) {
     console.error("Error occurred during execution trace evaluation:", error);

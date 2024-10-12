@@ -176,17 +176,33 @@ class ParallelSGS {
    * @param {number} loopTime - The time at which no more processes can be executed.
    */
   output(completeProcesses, loopTime) {
-    if (this.verbose) {
-      console.log("# Main walk");
-      completeProcesses.forEach(({ time, name }) =>
-        console.log(`${time}: ${name}`)
-      );
-      console.log(`# No more process doable at cycle ${loopTime + 1}`);
-    }
+    // if (this.verbose) {
+    //   console.log("# Main walk");
+    //   completeProcesses.forEach(({ time, name }) =>
+    //     console.log(`${time}: ${name}`)
+    //   );
+    //   console.log(`# No more process doable at cycle ${loopTime + 1}`);
+    // }
+
+    this.manageOutput("# Main walk");
+    completeProcesses.forEach(({ time, name }) =>
+      this.manageOutput(`${time}: ${name}`)
+    );
+    this.manageOutput(`# No more process doable at cycle ${loopTime + 1}`);
 
     this.sim.printStocks();
     if (this.logFile) {
       this.sim.printStocks(this.logFile);
+    }
+  }
+
+  /** @param {string} line */
+  manageOutput(line) {
+    if (this.verbose) {
+      console.log(line);
+    }
+    if (this.logFile) {
+      require("fs").appendFileSync(this.logFile, line + "\n", "utf8");
     }
   }
 
