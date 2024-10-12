@@ -37,12 +37,22 @@ const validateParams = (params) => {
       throw new Error(`Invalid delay: ${param2}.`);
     }
 
-    const optionalParameters = rest.reduce((acc, curr) => {
+    const optionalParameters = rest.reduce((acc, curr, ind, arr) => {
       if (["--verbose", "-v"].includes(curr)) {
         return { ...acc, verbose: true };
       } else if (["--log", "-l"].includes(curr)) {
         return { ...acc, logFile: param1 + ".log" };
+      } else if (["--cycle", "-c"].includes(curr)) {
+        const cycle = parseInt(arr[ind + 1]);
+        if (isNaN(cycle)) {
+          throw new Error(`Invalid cycle number: ${cycle}`);
+        }
+        return { ...acc, cycle };
       } else {
+        const cycle = parseInt(curr);
+        if (!isNaN(cycle) && ["--cycle", "-c"].includes(arr[ind - 1])) {
+          return acc; // Early return only for cycle param
+        }
         throw new Error(`Invalid parameter: ${curr}.`);
       }
     }, {});

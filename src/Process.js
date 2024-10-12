@@ -25,7 +25,19 @@ class Process {
     this.time = parseInt(time);
     this.score = score;
   }
+
+  toString() {
+    return `name: ${this.name} | need: ${getNameAndValue(
+      this.need
+    )} | output: ${getNameAndValue(this.output)} | time: ${this.time}`;
+  }
 }
+
+const getNameAndValue = (keyValue) => {
+  return Object.entries(keyValue)
+    .map(([name, val]) => `[${name}|${val}]`)
+    .join(",");
+};
 
 const parseStock = (stock) => {
   const stockMatch = stock.match(/(\w+):(\d+)/);

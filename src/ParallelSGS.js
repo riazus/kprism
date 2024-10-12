@@ -15,7 +15,6 @@ class ParallelSGS {
     this.logFile = logFile;
     this.begin = Date.now(); // Start time of the simulation.
     this.verbose = verbose; // Enable or disable verbose output.
-    // TODO
     this.cycle = cycle ?? Infinity; // Max number of cycles.
 
     this.Rbounds = this.calculateRbounds();
