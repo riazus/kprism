@@ -20,20 +20,34 @@ const getResources = (file) => {
 
 const validateParams = (params) => {
   try {
-    if (params.length !== 2) {
+    if (params.length < 2) {
       throw new Error("Two parameters are required.");
     }
 
-    const [param1, param2] = params;
+    const [param1, param2, ...rest] = params;
     if (!param1 || !param2) {
       throw new Error("Both parameters must be non-empty.");
     }
     if (!fs.existsSync(param1)) {
       throw new Error(`File at path ${param1} does not exist.`);
     }
-
+    const delay = parseInt(param2);
     const file = fs.readFileSync(param1);
-    return { file, delay: param2 };
+    if (isNaN(delay)) {
+      throw new Error(`Invalid delay: ${param2}.`);
+    }
+
+    const optionalParameters = rest.reduce((acc, curr) => {
+      if (["--verbose", "-v"].includes(curr)) {
+        return { ...acc, verbose: true };
+      } else if (["--log", "-l"].includes(curr)) {
+        return { ...acc, logFile: param1 + ".log" };
+      } else {
+        throw new Error(`Invalid parameter: ${curr}.`);
+      }
+    }, {});
+
+    return { file, delay, ...optionalParameters };
   } catch (err) {
     console.log(err.message);
     process.exit(1);

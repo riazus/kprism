@@ -7,17 +7,16 @@ class ParallelSGS {
    * @param {Simulation} sim - Current simulation to evaluate.
    * @param {Object} kwargs - Additional configuration parameters.
    */
-  constructor(sim, { delay, file, cycle, verbose }) {
+  constructor(sim, { delay, logFile, cycle, verbose }) {
     this.sim = sim;
     this.sim.filterProcesses(); // Filter eligible processes.
 
     this.delay = delay; // Max running time for the simulation.
-    this.file = file;
+    this.logFile = logFile;
     this.begin = Date.now(); // Start time of the simulation.
+    this.verbose = verbose; // Enable or disable verbose output.
     // TODO
     this.cycle = cycle ?? Infinity; // Max number of cycles.
-    // TODO
-    this.verbose = verbose ?? true; // Enable or disable verbose output.
 
     this.Rbounds = this.calculateRbounds();
     this.theoreticalStocks = { ...this.sim.stocks }; // Copy of the initial stocks.
@@ -177,30 +176,17 @@ class ParallelSGS {
    * @param {number} loopTime - The time at which no more processes can be executed.
    */
   output(completeProcesses, loopTime) {
-    this.manageOutput("# Main walk");
-    completeProcesses.forEach(({ time, name }) =>
-      this.manageOutput(`${time}: ${name}`)
-    );
-    this.manageOutput(`# No more process doable at cycle ${loopTime + 1}`);
-    this.sim.printStocks(this.file);
-
     if (this.verbose) {
-      this.sim.printStocks();
-    }
-  }
-
-  /**
-   * Prints or writes output to file and console.
-   * @param {string} message - The output message.
-   */
-  manageOutput(message) {
-    if (this.verbose) {
-      console.log(message);
+      console.log("# Main walk");
+      completeProcesses.forEach(({ time, name }) =>
+        console.log(`${time}: ${name}`)
+      );
+      console.log(`# No more process doable at cycle ${loopTime + 1}`);
     }
 
-    // Optionally write to file.
-    if (this.file) {
-      require("fs").appendFileSync(this.file, message + "\n");
+    this.sim.printStocks();
+    if (this.logFile) {
+      this.sim.printStocks(this.logFile);
     }
   }
 

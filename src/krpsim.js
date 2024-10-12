@@ -4,12 +4,10 @@ const { ParallelSGS } = require("./ParallelSGS");
 
 function main() {
   const args = process.argv.slice(2);
-  const { file, delay } = validateParams(args);
+  const { file, delay, verbose, logFile } = validateParams(args);
   const { stocks, processes, optimize } = getResources(file);
   const simulation = new Simulation(stocks, processes, optimize);
-
-  const logFile = args[0] + ".log";
-  const solver = new ParallelSGS(simulation, { delay, file: logFile });
+  const solver = new ParallelSGS(simulation, { delay, logFile, verbose });
   solver.run();
 }
 
