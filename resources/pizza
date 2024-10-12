@@ -1,0 +1,18 @@
+# personal example (limited)
+
+euro:5
+
+# can be executed paralelly
+buy_mozarella:(euro:1):(mozarella:1):1
+buy_base:(euro:1):(base:1):1
+buy_pasta:(euro:1):(pasta:1):1
+buy_anchovies:(euro:2):(anchovies:2):1
+
+# cooking process
+do_oven:(base:1):(mid_cooked_base:1):10
+add_pasta:(mid_cooked_base:1;pasta:1):(base_with_pasta:1):2
+do_oven:(base_with_pasta:1):(cooked_base:1):4
+add_main_ingredients:(cooked_base:1;anchovies:2;mozarella:1):(pre_cooked_pizza:1):2
+do_oven:(pre_cooked_pizza:1):(pizza:1):5
+
+optimize:(time;pizza)

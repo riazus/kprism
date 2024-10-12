@@ -1,0 +1,9 @@
+# personal example (unlimited)
+
+muggle:1
+
+pass_piscine:(muggle:1):(ecole_student:1;wish_to_be_good_programmer:1):28
+do_common_core:(ecole_student:1):(transcended_student:1):356
+do_project:(transcended_student:1):(done_project:1;transcended_student:1):30
+
+optimize:(done_project)
