@@ -176,14 +176,6 @@ class ParallelSGS {
    * @param {number} loopTime - The time at which no more processes can be executed.
    */
   output(completeProcesses, loopTime) {
-    // if (this.verbose) {
-    //   console.log("# Main walk");
-    //   completeProcesses.forEach(({ time, name }) =>
-    //     console.log(`${time}: ${name}`)
-    //   );
-    //   console.log(`# No more process doable at cycle ${loopTime + 1}`);
-    // }
-
     this.manageOutput("# Main walk");
     completeProcesses.forEach(({ time, name }) =>
       this.manageOutput(`${time}: ${name}`)
