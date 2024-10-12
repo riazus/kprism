@@ -1,0 +1,10 @@
+# Example with the dead branch
+
+stock_1:10
+
+do_1_process:(stock_1:10):(stock_2:5):1
+# here we receive not enough stocks for future process
+do_2_process:(stock_2:3):(stock_3:0):1
+do_3_process:(stock_3:2):(stock_4:1):1
+
+optimize:(time;stock_4)
