@@ -11,7 +11,7 @@ class Simulation {
     this.processes = processes;
     this.optimize = optimize;
     /** @type {Process[]} */
-    this.elligibles = [];
+    this.eligibles = [];
     /** @type {Object.<string,number>} */
     this.priority = {};
   }
@@ -74,19 +74,23 @@ class Simulation {
    * @private
    */
   _filterProcess(optimizing, seen, depth) {
-    this.processes.forEach((p) => {
-      Object.keys(p.output).forEach((r) => {
-        if (optimizing.includes(r)) {
-          Object.keys(p.need).forEach((n) => {
-            if (!this.priority.hasOwnProperty(n)) {
-              this.priority[n] = depth;
+    this.processes.forEach((process) => {
+      Object.keys(process.output).forEach((outputName) => {
+        if (optimizing.includes(outputName)) {
+          Object.keys(process.need).forEach((needName) => {
+            if (!this.priority.hasOwnProperty(needName)) {
+              this.priority[needName] = depth;
             }
-            this.priority[n] = Math.min(this.priority[n], depth);
+            this.priority[needName] = Math.min(this.priority[needName], depth);
           });
 
-          if (!seen.includes(p)) {
-            seen.push(p);
-            seen = this._filterProcess(Object.keys(p.need), seen, depth + 1);
+          if (!seen.includes(process)) {
+            seen.push(process);
+            seen = this._filterProcess(
+              Object.keys(process.need),
+              seen,
+              depth + 1
+            );
           }
         }
       });
@@ -97,7 +101,7 @@ class Simulation {
 
   /** Filters eligible processes for the simulation. */
   filterProcesses() {
-    this.elligibles = this._filterProcess(this.optimize, [], 0);
+    this.eligibles = this._filterProcess(this.optimize, [], 0);
     this.optimize.forEach((o) => (this.priority[o] = -2));
     return this;
   }
@@ -119,26 +123,27 @@ class Simulation {
    * @private
    * @param {Object} R - The available resources (stocks).
    */
-  _getElligibles(R) {
-    return this.elligibles.filter((process) => this._canPay(process, R));
+  _getEligibles(R) {
+    return this.eligibles.filter((process) => this._canPay(process, R));
   }
 
   /** Gets the list of eligible processes, sorted by heuristic. */
-  getElligibleProcesses() {
-    let elligibles = this._getElligibles(this.stocks);
+  getEligibleProcesses() {
+    let eligibles = this._getEligibles(this.stocks);
 
     // Sorting heuristic for the processes.
-    const keyFunc = (x) => {
+    const keyFunc = (process) => {
       return this.optimize.reduce((acc, curr) => {
-        const oScore = x.score[curr] !== undefined ? x.score[curr] : -Infinity;
-        const score = Object.keys(x.score).reduce((acc, key) =>
-          key !== curr ? acc + x.score[key] : acc
+        const oScore =
+          process.score[curr] !== undefined ? process.score[curr] : -Infinity;
+        const score = Object.keys(process.score).reduce((acc, key) =>
+          key !== curr ? acc + process.score[key] : acc
         );
         return [...acc, oScore, score];
       }, []);
     };
 
-    elligibles.sort((a, b) => {
+    eligibles.sort((a, b) => {
       const aKeys = keyFunc(a);
       const bKeys = keyFunc(b);
       for (let i = 0; i < aKeys.length; i++) {
@@ -149,7 +154,7 @@ class Simulation {
       return 0;
     });
 
-    return elligibles;
+    return eligibles;
   }
 
   /** @param {string} name */

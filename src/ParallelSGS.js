@@ -90,7 +90,7 @@ class ParallelSGS {
   }
 
   /**
-   * Heuristic-based job selection.
+   * Heuristic-based process selection.
    * @param {Process[]} eligibleProcesses
    * @returns {Process | undefined}
    */
@@ -147,7 +147,7 @@ class ParallelSGS {
       );
 
       /** @type {Process[]} */
-      let eligibleProcesses = this.sim.getElligibleProcesses();
+      let eligibleProcesses = this.sim.getEligibleProcesses();
       while (eligibleProcesses.length) {
         const selectedProcess = this.heuristicSelect(eligibleProcesses);
         if (!selectedProcess) {
@@ -158,7 +158,7 @@ class ParallelSGS {
           loopTime + selectedProcess.time;
         activeProcesses.push({ time: loopTime, process: selectedProcess });
         this.updateStocks(selectedProcess);
-        eligibleProcesses = this.sim.getElligibleProcesses(); // Refresh eligible processes
+        eligibleProcesses = this.sim.getEligibleProcesses(); // Refresh eligible processes
       }
     }
 
@@ -200,7 +200,7 @@ class ParallelSGS {
 
   /** Calculates the resource bounds (Rbounds) for eligible processes. */
   calculateRbounds() {
-    return this.sim.elligibles
+    return this.sim.eligibles
       .flatMap((p) => Object.entries(p.need))
       .reduce((acc, curr) => {
         const [need, amount] = curr;

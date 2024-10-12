@@ -31,8 +31,8 @@ const validateParams = (params) => {
     if (!fs.existsSync(param1)) {
       throw new Error(`File at path ${param1} does not exist.`);
     }
-    const delay = parseInt(param2);
     const file = fs.readFileSync(param1);
+    const delay = parseInt(param2);
     if (isNaN(delay)) {
       throw new Error(`Invalid delay: ${param2}.`);
     }
